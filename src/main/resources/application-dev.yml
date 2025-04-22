@@ -1,0 +1,39 @@
+spring:
+  config:
+    import: optional:secrets-dev.yml
+  h2:
+    console:
+      enabled: true
+  datasource:
+    url: jdbc:h2:mem:person
+    username: ''
+    password: ''
+
+###### spring actuator ######
+management:
+  endpoints:
+    web:
+      base-path: /actuator
+      exposure:
+        include:
+          - info
+          - health
+          - metrics
+          - loggers
+          - numberOfPeopleEndpoint  #exposing the custom endpoint
+  endpoint:
+    numberOfPeopleEndpoint:
+      enabled: true
+    health:
+      show-details: always
+  info:
+    env:
+      enabled: true
+
+###### Application Info ######
+info:
+  application:
+    name: '@project.name@'
+    description: '@project.description@'
+    version: '@project.version@'
+
