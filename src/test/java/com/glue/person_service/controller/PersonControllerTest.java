@@ -13,6 +13,11 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.http.MediaType;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -21,6 +26,9 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 
 class PersonControllerTest {
     @Mock
@@ -28,9 +36,13 @@ class PersonControllerTest {
     @InjectMocks
     private PersonController personController;
 
+    private MockMvc mockMvc;
+    private ObjectMapper objectMapper = new ObjectMapper();
+
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+        mockMvc = MockMvcBuilders.standaloneSetup(personController).build();
     }
 
     @Test
@@ -40,6 +52,58 @@ class PersonControllerTest {
         ResponseEntity<String> response = personController.savePerson(dto);
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertEquals("Person added successfully", response.getBody());
+    }
+
+    @Test
+    void savePerson_shouldFailOnInvalidEmail() throws Exception {
+        PersonDTO dto = PersonDTO.builder()
+                .name("John").surname("Doe").email("invalid-email")
+                .phone("1234567890").dateOfBirth("2000-01-01").age(25)
+                .username("johndoe").password("password")
+                .build();
+        mockMvc.perform(post("/api/v1/person/save")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void savePerson_shouldFailOnUnderage() throws Exception {
+        PersonDTO dto = PersonDTO.builder()
+                .name("John").surname("Doe").email("john@example.com")
+                .phone("1234567890").dateOfBirth("2010-01-01").age(17)
+                .username("johndoe").password("password")
+                .build();
+        mockMvc.perform(post("/api/v1/person/save")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void savePerson_shouldFailOnInvalidUsername() throws Exception {
+        PersonDTO dto = PersonDTO.builder()
+                .name("John").surname("Doe").email("john@example.com")
+                .phone("1234567890").dateOfBirth("2000-01-01").age(25)
+                .username("1badusername").password("password")
+                .build();
+        mockMvc.perform(post("/api/v1/person/save")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void savePerson_shouldFailOnInvalidPassword() throws Exception {
+        PersonDTO dto = PersonDTO.builder()
+                .name("John").surname("Doe").email("john@example.com")
+                .phone("1234567890").dateOfBirth("2000-01-01").age(25)
+                .username("johndoe").password("bad pass")
+                .build();
+        mockMvc.perform(post("/api/v1/person/save")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
