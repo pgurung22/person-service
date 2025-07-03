@@ -36,7 +36,7 @@ public class Person {
 
     @PrePersist
     @PreUpdate
-    private void encryptPassword() {
+    void encryptPassword() {
         BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
         this.password = passwordEncoder.encode(this.password);
     }
